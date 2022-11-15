@@ -1,0 +1,978 @@
+openapi: 3.0.1
+info:
+  title: EXFO Optical Light Source API
+  description: This API allows to control an EXFO Optical Light Source, to change state, attenuation, modulation etc.
+  termsOfService: https://www.exfo.com/en/user-privacy-notice/
+  contact:
+    name: EXFO Inc.
+    url: https://www.exfo.com
+    email: support@exfo.com
+  version: v1
+paths:
+  /ols:
+    get:
+      tags:
+        - Source
+      summary: Returns the list of optical light sources. Provides summary or detailed information about sources.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "Optional OLS instrument Connection String. If not provided, the API will return list of OLS instruments. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: "Specifies the instrument information return type either: Summary (Minimal connection information) or Full (Detailed information about source capabilities)"
+          required: true
+          schema:
+            $ref: '#/components/schemas/InstrumentInformationType'
+      responses:
+        '200':
+          description: OLS instrument information.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/InstrumentInformationSummary'
+                - $ref: '#/components/schemas/InstrumentInformation'
+            application/xml:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/InstrumentInformationSummary'
+                - $ref: '#/components/schemas/InstrumentInformation'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+  /ols/ports:
+    get:
+      tags:
+        - Source
+      summary: Returns the list of available ports for the source. Provides detailed information for each port.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Port information list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Port'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Port'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+  /ols/ports/{port}:
+    get:
+      tags:
+        - Source
+      summary: Returns the supported services for this source port.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Port information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Port'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Port'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found / Port not found
+        '500':
+          description: Internal Server Error
+  /ols/ports/{port}/channels:
+    get:
+      tags:
+        - Source
+      summary: Returns the list of available channels for the port. Provides detailed information for each channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Channel information list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found / Port not found
+        '500':
+          description: Internal Server Error
+  /ols/ports/{port}/channels/{channel}:
+    get:
+      tags:
+        - Source
+      summary: Returns the supported services for this channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Channel information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Channel'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+  /ols/ports/{port}/channels/{channel}/attenuation:
+    get:
+      tags:
+        - Source
+      summary: Returns the current attenuation on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Attenuation information.
+          content:
+            text/plain:
+              schema:
+                type: number
+                format: double
+                description: Attenuation value in dB.
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Attenuation not supported by the channel / Attenuation not applicable due to modulation enabled
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - Source
+      summary: Sets the attenuation on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Attenuation information.
+        content:
+          text/plain:
+            schema:
+              type: number
+              format: double
+              description: Attenuation value in dB.
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Attenuation not supported by the channel / Attenuation value is not valid or out of range.
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+  /ols/ports/{port}/channels/{channel}/power:
+    get:
+      tags:
+        - Source
+      summary: Returns the current power on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Power information.
+          content:
+            text/plain:
+              schema:
+                type: number
+                format: double
+                description: Power value in dBm.
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Power not supported by the channel
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+        '501':
+          description: Not Implemented
+    put:
+      tags:
+        - Source
+      summary: Sets the power on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Power information.
+        content:
+          text/plain:
+            schema:
+              type: number
+              format: double
+              description: Power value in dBm.
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Power not supported by the channel
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+        '501':
+          description: Not Implemented
+  /ols/ports/{port}/channels/{channel}/modulation:
+    get:
+      tags:
+        - Source
+      summary: Returns the current modulation on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Modulation information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Modulation'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Modulation'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Modulation not supported by the channel
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - Source
+      summary: Sets the modulation on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Modulation information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Modulation'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/Modulation'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Modulation not supported by the channel / Modulation Frequency is missing for Internal modulation / Unacceptable modulation frequency
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+  /ols/ports/{port}/channels/{channel}/wavelength:
+    get:
+      tags:
+        - Source
+      summary: Returns the current wavelength on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Wavelength information.
+          content:
+            text/plain:
+              schema:
+                type: number
+                format: double
+                description: Wavelength value in meter.
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Wavelength service is not available for this channel
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - Source
+      summary: Sets the wavelength on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Wavelength value.
+        content:
+          text/plain:
+            schema:
+              type: number
+              format: double
+              description: Wavelength value in meter.
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Wavelength service is not available for this channel
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+        '501':
+          description: Not Implemented
+  /ols/ports/{port}/channels/{channel}/sweep:
+    get:
+      tags:
+        - Source
+      summary: Returns the current sweep settings on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sweep wavelength range information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SweepSettings'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/SweepSettings'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Sweep is not available for this channel
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+        '501':
+          description: Not Implemented
+    post:
+      tags:
+        - Source
+      summary: Change the current sweep settings on this port-channel.
+      description: "### Valid actions: \r\n* **start** : starts a sweep using preestablished sweep parameters. \r\n* **stop** : concludes the current sweep to A or B wavelength. This action is automatically called when sweep settings indicate a limited number of sweep(s).\r\n* **abort** : interrupts current sweep operation and leave channel at current wavelength (typically between wavelength A and B)."
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: action
+          in: query
+          description: "Action to perform during a sweep."
+          required: true
+          schema:
+            $ref: '#/components/schemas/SweepActions'
+      requestBody:
+        description: Sweep wavelength range information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SweepSettings'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/SweepSettings'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Sweep is not available for this channel
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+        '501':
+          description: Not Implemented
+  /ols/ports/{port}/channels/{channel}/state:
+    get:
+      tags:
+        - Source
+      summary: Gets the current state on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: State information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelState'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ChannelState'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - Source
+      summary: Sets the state on this port-channel.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OLS instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: true
+          schema:
+            type: string
+        - name: port
+          in: path
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+          required: true
+          schema:
+            type: integer
+        - name: channel
+          in: path
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: State information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelState'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/ChannelState'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found / Port not found / Port-channel not found
+        '500':
+          description: Internal Server Error
+components:
+  schemas:
+    InstrumentInformationType:
+      enum:
+        - Summary
+        - Full
+      type: string
+      default: "Summary"
+    SweepActions:
+      enum:
+        - start
+        - stop
+        - abort
+      type: string
+      default: "start"      
+    SweepState:
+      enum:
+        - Stopped
+        - Sweeping
+        - SweepingContinuous
+      type: string
+      default: Stopped
+    InstrumentInformationSummary:
+      type: object
+      properties:
+        instrumentModelName:
+          type: string
+          description: "Corresponds to the complete model name of the instrument. For e.g. FTBx-2150-2346B-4-EA\r\n"
+        connectionStrings:
+          type: array
+          items:
+            type: string
+            description: "List of possible values for of header parameter \"Metrino-Connection-String\" containing the serial number. For e.g. \"sn: XXXXX\" where XXXXX represents instrument serial number.\r\n"
+        portCount:
+          type: integer
+          format: int32
+          default: 1
+          description: "Corresponds to the number of ports this source instrument provides. Each port has it's own characteristics and is independent from other ports.\r\n"
+    InstrumentInformation:
+      allOf:
+      - $ref: '#/components/schemas/InstrumentInformationSummary'
+      - type: object
+        properties:
+          modular:
+            type: boolean
+            description: "Specifies whether module fits inside a LTB platform. Value can be true of false."
+          platformName:
+            type: string
+            description: "Name of the platform the module is connected. for e.g. LTB-8. In case of non modular device, the name of device should be returned. for e.g. MXS-9100"
+          platformId:
+            type: integer
+            format: int32
+            description: "Logical instrument identifier (LINS) of the module inside platform. It is an integer. for e.g. 0, 1 or 2 etc. In case of non modular device, -1 should be returned."
+          slotNumber:
+            type: integer
+            format: int32
+            description: The slot number of the module inside the platform. In case of non modular device, -1 should be returned.
+          slotCount:
+            type: integer
+            format: int32
+            description: "Number of slots occupied by the module inside the platform. In case of non modular device, 0 should be returned."
+          platformSerialNumber:
+            type: string
+            description: "Serial number of the platform the module is connected."
+          instrumentState:
+            $ref: '#/components/schemas/InstrumentState'
+    InstrumentState:
+      enum:
+        - Busy
+        - Defective
+        - Initinprogress
+        - Ready
+        - Unconfigured
+        - Uninitialized
+      type: string
+      description: "Indicates the status of the module.\r\n#### Valid values: \r\n* Busy - Means the module is busy.\r\n* Defective - Means the module is defective.\r\n* Initinprogress - Means the module initialization is in progress.\r\n* Ready - Means the module is ready.\r\n* Unconfigured - Means the module is not configured.\r\n* Uninitialized - Means the module is not inititlized."
+    SourceType:
+      enum:
+        - LED
+        - DFB
+        - SLED
+      type: string
+      description: "Indicates what type of source this port presents.\r\n#### Valid values: \r\n* LED - Light Emitting Diode type source.\r\n* DFB - Distributed Feedback laser type (cooled or uncolled).\r\n* SLED - Superluminescent diode broad band source.\r\n"
+    FiberType:
+      enum:
+        - SMF9
+        - MMF50
+        - PMF15
+      type: string
+      description: "Specifies the fiber type available at this output port. Take note we do not specify the connector type, nor the angled or flat finish.\r\n#### Valid values:\r\n* SMF9 (Single Mode Fiber, 9/125 µm diameter core)\r\n* MMF50 (Multi Mode Fiber, 50/125 µm diameter core)\r\n* PMF15 (Polarization maintaining @1500 nm single mode fiber, 9/125 µm diameter core)\r\n"
+    ConnectorType:
+      enum:
+        - EI
+        - EA
+        - FC_UPC
+        - SC_UPC
+        - LC_UPC
+        - FC_APC
+        - SC_APC
+        - LC_APC
+        - FC_PC
+        - MPO_12M
+      type: string
+      description: "Specifies the connector type available at this output port.\r\n#### Valid values:\r\n* EI (UPC Connector Interface (Ultra Physical Contact polished))\r\n* EA (APC Connector Interface (Angled Physical Contact polished))\r\n* FC_UPC (Fixed FC Connector (Ultra Physical Contact polished))\r\n* SC_UPC (Fixed SC Connector (Ultra Physical Contact polished))\r\n* LC_UPC (Fixed LC Connector (Ultra Physical Contact polished))\r\n* FC_APC (Fixed FC Connector (Angled Physical Contact polished))\r\n* SC_APC (Fixed SC Connector (Angled Physical Contact polished))\r\n* LC_APC (Fixed LC Connector (Angled Physical Contact polished))\r\n* FC_PC (Fixed FC Connector (Physical Contact polished))\r\n* MPO_12M (Fixed MPO 12 Fibers Pinned Connector (Ultra Physical Contact polished))\r\n"
+    ChannelState:
+      enum:
+        - ON
+        - OFF
+      type: string
+      description: "Indicates the state of this port-channel."
+    AttenuationRange:
+      type: object
+      description: Channel attenuation limits in dB.
+      properties:
+        minimumAttenuation:
+          type: number
+          format: double
+        maximumAttenuation:
+          type: number
+          format: double
+    PowerRange:
+      type: object
+      description: Channel power limits in dBm.
+      properties:
+        minimumPower:
+          type: number
+          format: double
+        maximumPower:
+          type: number
+          format: double
+    Port:
+      type: object
+      properties:
+        portNumber:
+          type: integer
+          format: int32
+          minimum: 1
+          description: "Port identification number. Positive integer value: corresponds to port index and starts at 1."
+        sourceType:
+          $ref: '#/components/schemas/SourceType'
+        fiberType:
+          $ref: '#/components/schemas/FiberType'
+        connectorType:
+          $ref: '#/components/schemas/ConnectorType'
+        channelCount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: "Provides the number of light emitting channel for this source port."
+    Channel:
+      type: object
+      properties:
+        channelNumber:
+          type: integer
+          format: int32
+          minimum: 1
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+        broadband:
+          type: boolean
+          description: "Indicates whether or not the channel is broadband."
+        tunable:
+          type: boolean
+          description: "Indicates whether or not the channel can be tuned."
+        powerAdjustable:
+          type: boolean
+          description: "Indicates whether the absolute output power can be changed on this channel."
+        attenuable:
+          type: boolean
+          description: "Indicates whether the attenuation level can be changed on this channel."
+        modulable:
+          type: boolean
+          description: "Indicates whether or not the channel can be modulated."
+        sweepable:
+          type: boolean
+          description: "Indicates whether or not the channel can be sweeped. The channel must also be tunable to be sweepable."
+        wavelengthRange:
+          $ref: '#/components/schemas/WavelengthRange'
+        sweepDirections:
+          type: array
+          items:
+            type: string
+          example: ["FromAtoB", "FromBtoA", "Bidirectional"]
+          description: "Indicates possible values for sweep direction."
+        sweepCount:
+          type: integer
+          format: int32
+          minimum: 1
+          default: 1
+        wavelength:
+          type: number
+          format: double
+          description: "Indicates the central wavelength of the channel. This can also be refered as the 'Nominal' wavelength of the source at this port-channel. The value expressed is in meter."
+        attenuationRange:
+          $ref: '#/components/schemas/AttenuationRange'
+        powerRange:
+          $ref: '#/components/schemas/PowerRange'
+        modulation:
+          type: object
+          properties:
+            modulations:
+              type: array
+              items:
+                type: string
+              example: ["None", "ORL Optimized", "Internal"]
+              description: "Indicates possible values for modulation."
+            modulationFrequencies:
+              type: array
+              items:
+                type: number
+                format: double
+              example: [270.0, 330.0, 1000.0, 2000.0]
+              description: "Indicates available discrete modulation frequencies in Hz."
+            modulationFrequencyRange:
+              type: object
+              description: "Indicates available range for modulation frequency in Hz. Will only accept positive values."
+              properties:
+                minimumFrequency:
+                  type: number
+                  format: double
+                  default: 0.001
+                maximumFrequency:
+                  type: number
+                  format: double
+                  default: 1000000000.0
+            modulationWaveforms:
+              type: array
+              description: "Indicates format of the waveform when modulating."
+              items:
+                type: string
+              example: ["Square", "Sine", "Triangular"]
+            modulationDutyCycle:
+              type: number
+              format: double
+              description: "Indicates the modulation duty cycle in percentage."
+              minimum: 0.0
+              maximum: 100.0
+              default: 50.0
+    Modulation:
+      type: object
+      properties:
+        selectedModulation:
+          $ref: '#/components/schemas/ModulationOption'
+        selectedModulationFrequency:
+          $ref: '#/components/schemas/ModulationFrequency'
+    SweepSettings:
+      type: object
+      properties:
+        wavelengthRange:
+          $ref: '#/components/schemas/WavelengthRange'
+        sweepDirection:
+          enum:
+            - FromAtoB
+            - FromBtoA
+            - Bidirectional
+          type: string
+          description: "Indicates the direction of the sweep."
+        sweepCount:
+          type: integer
+          format: int32
+          description: "Indicates the number of times the sweep will happen. 1 means single sweep."
+        sweepSpeed:
+          type: number
+          format: double
+          description: "Indicates the speed at which the sweep will happen. Value is expressed in meter per second."
+        sweepState:
+          $ref: '#/components/schemas/SweepState'
+    WavelengthRange:
+      type: object
+      description: "Wavelength boundaries in meter. Can be used to indicate the operational limits of a broadband source. Can be used for wavelength position on a sweep, in which case, startWavelength corresponds to wavelength 'A' and stopWavelength corresponds to wavelength 'B'."
+      properties:
+        startWavelength:
+          type: number
+          format: double
+        stopWavelength:
+          type: number
+          format: double
+    ModulationOption:
+      enum:
+        - None
+        - ORL Optimized
+        - Internal
+      type: string
+      default: None
+      description: "Indicates the selected modulation on the source port. \r\n#### Valid values: \r\n* None\r\n* ORL Optimized\r\n* Internal\r\n"
+    ModulationFrequency:
+      type: number
+      format: double
+      description: "Indicates the selected modulation frequency on the source port in case modulation type is Internal. \r\n#### Typical values: \r\n* 270.0\r\n* 330.0\r\n* 1000.0\r\n* 2000.0\r\n"
