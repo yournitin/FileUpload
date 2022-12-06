@@ -1,0 +1,1162 @@
+openapi: 3.0.1
+info:
+  title: EXFO Optical Power Meter API
+  description: This API allows to control an EXFO Optical Power Meter, to perform acquisition, download measurement, retrieve power values, etc.
+  termsOfService: https://www.exfo.com/en/user-privacy-notice/
+  contact:
+    name: EXFO Inc.
+    url: https://www.exfo.com
+    email: support@exfo.com
+  version: v1
+paths:
+  /opm:
+    get:
+      tags:
+        - Power Meter
+      summary: Returns the list of high-performance power meter instruments. Provides summary or detailed information about instruments.
+      parameters:
+        - name: Metrino-Connection-String
+          in: header
+          description: "OPM instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: "Specifies the instrument information return type either: Summary (Minimal connection information) or Full (Detailed information about source capabilities)"
+          required: true
+          schema:
+            $ref: '#/components/schemas/InstrumentInformationType'
+      responses:
+        '200':
+          description: OPM instrument information.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/InstrumentInformationSummary'
+                - $ref: '#/components/schemas/InstrumentInformation'
+            application/xml:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/InstrumentInformationSummary'
+                - $ref: '#/components/schemas/InstrumentInformation'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+  /opm/channels:
+    get:
+      tags:
+        - Power Meter
+      summary: Returns the list of available channels for the instrument. Provides detailed information for each channel.
+      responses:
+        '200':
+          description: Channel information list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}:
+    get:
+      tags:
+        - Power Meter
+      summary: Returns the supported services for this channel.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+      responses:
+        '200':
+          description: Channel information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Channel'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}/power:
+    get:
+      tags:
+        - Power Meter
+      summary: Returns the current absolute power on this channel.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+        - $ref: '#/components/parameters/scaleParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/correctionFactorParam'
+        - $ref: '#/components/parameters/wavelengthParam'
+        - $ref: '#/components/parameters/absolutePowerUnitParam'
+        - $ref: '#/components/parameters/averagingParam'
+      responses:
+        '200':
+          description: Absolute power information.
+          content:
+            text/plain:
+              schema:
+                type: number
+                format: double
+                description: Absolute power value in selected unit.
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Unacceptable Scale as this channel is currently being used as analog output port / Unacceptable offset / Unacceptable correction factor / Unacceptable wavelength / Unacceptable averaging
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}/relativePower:
+    get:
+      tags:
+        - Power Meter
+      summary: Returns the current relative power on this channel.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+        - $ref: '#/components/parameters/scaleParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/correctionFactorParam'
+        - $ref: '#/components/parameters/referencePowerParam'
+        - $ref: '#/components/parameters/wavelengthParam'
+        - $ref: '#/components/parameters/relativePowerUnitParam'
+        - $ref: '#/components/parameters/averagingParam'
+      responses:
+        '200':
+          description: Relative power information.
+          content:
+            text/plain:
+              schema:
+                type: number
+                format: double
+                description: Relative power value in selected unit.
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Unacceptable Scale as this channel is currently being used as analog output port / Unacceptable offset / Unacceptable correction factor / Unacceptable reference power / Unacceptable wavelength / Unacceptable averaging
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}/nulling:
+    post:
+      tags:
+        - Power Meter
+      summary: Starts offset nulling on this channel.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+      responses:
+        '200':
+          description: Nulling started
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Nulling already in progress on this channel
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}/nulling/state:
+    get:
+      tags:
+        - Power Meter
+      summary: Gets state of nulling on this channel.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+      responses:
+        '200':
+          description: Nulling state information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NullingState'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/NullingState'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}/monitoring/reset:
+    post:
+      tags:
+        - Power Meter
+      summary: Performs monitoring reset on this channel.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+      responses:
+        '200':
+          description: Reset done
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}/monitoring/powerDrift:
+    get:
+      tags:
+        - Power Meter
+      summary: Returns the maximum, minimum and delta power drift.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+        - $ref: '#/components/parameters/scaleParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/correctionFactorParam'
+        - $ref: '#/components/parameters/wavelengthParam'
+        - $ref: '#/components/parameters/absolutePowerUnitParam'
+        - $ref: '#/components/parameters/averagingParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PowerDrift'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/PowerDrift'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Unacceptable Scale as this channel is currently being used as analog output port / Unacceptable offset / Unacceptable correction factor / Unacceptable wavelength / Unacceptable averaging / Monitoring is not activated
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+  /opm/channels/{channel}/monitoring/relativePowerDrift:
+    get:
+      tags:
+        - Power Meter
+      summary: Returns the maximum, minimum and delta relative power drift.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+        - $ref: '#/components/parameters/channelParam'
+        - $ref: '#/components/parameters/scaleParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/correctionFactorParam'
+        - $ref: '#/components/parameters/referencePowerParam'
+        - $ref: '#/components/parameters/wavelengthParam'
+        - $ref: '#/components/parameters/relativePowerUnitParam'
+        - $ref: '#/components/parameters/averagingParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelativePowerDrift'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/RelativePowerDrift'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Unacceptable Scale as this channel is currently being used as analog output port / Unacceptable offset / Unacceptable correction factor / Unacceptable reference power / Unacceptable wavelength / Unacceptable averaging / Monitoring is not activated
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server 
+  /opm/acquisitions:
+    post:
+      tags:
+        - Power Meter
+      summary: Performs the acquisition.
+      requestBody:
+        description: Acquisition configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcquisitionConfiguration'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/AcquisitionConfiguration'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Unique identifier used to reference the requested acquisition.
+        '400':
+          description: Bad Request / Unavailable - no detector on this channel or instrument / Acquisition already started and waiting for trigger conditions / Acquisition already started and in progress / There is an acquisition already in memory. Either save it or delete it. / Unacceptable trigger expression / Acquisition on multiple instruments is not supported.
+        '404':
+          description: Instrument not found / Channel not found
+        '500':
+          description: Internal Server Error
+    get:
+      tags:
+        - Power Meter
+      summary: Gets list of current acquisitions.
+      responses:
+        '200':
+          description: List of current acquisitions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AcquisitionSummary'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AcquisitionSummary'
+        '500':
+          description: Internal Server Error
+  /opm/acquisitions/{acquisitionId}:
+    get:
+      tags:
+        - Power Meter
+      summary: Gets details of an acquisition.
+      parameters:
+        - $ref: '#/components/parameters/acquisitionIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcquisitionDetails'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/AcquisitionDetails'
+        '404':
+          description: Acquisition not found
+        '500':
+          description: Internal Server Error        
+    post:
+      tags:
+        - Power Meter
+      summary: Stop/Save an acquisition.
+      parameters:
+        - $ref: '#/components/parameters/acquisitionIdParam'
+        - $ref: '#/components/parameters/measurementNameParam'
+        - $ref: '#/components/parameters/actionParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                nullable: true
+                type: string
+                description: Unique identifier used to reference the requested measurement.
+        '400':
+          description: Bad Request / MeasurementName is mandatory to save an acquisition
+        '404':
+          description: Acquisition not found
+        '500':
+          description: Internal Server Error
+    delete:
+      tags:
+        - Power Meter
+      summary: Deletes the acquisition corresponding to the specified id. Acquisition must first be stopped.
+      parameters:
+        - $ref: '#/components/parameters/acquisitionIdParam'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Can not delete an acquisition which is running. It must be stopped first.
+        '404':
+          description: Acquisition not found
+        '500':
+          description: Internal Server Error
+  /opm/analogOutput:
+    get:
+      tags:
+        - Power Meter
+      summary: Gets current analog output settings.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+      responses:
+        '200':
+          description: Analog output settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalogOutputConfiguration'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/AnalogOutputConfiguration'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Instrument does not support analog output
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - Power Meter
+      summary: Sets current analog output settings.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+      requestBody:
+        description: Analog output settings.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalogOutputConfiguration'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/AnalogOutputConfiguration'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Instrument does not support analog output
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+  /opm/measurements:
+    get:
+      tags:
+        - Power Meter
+      summary: Gets list of currently saved measurements.
+      responses:
+        '200':
+          description: List of currently saved measurements.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeasurementSummary'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeasurementSummary'
+        '500':
+          description: Internal Server Error
+  /opm/measurements/{measurementId}:
+    get:
+      tags:
+        - Power Meter
+      summary: Gets/Downloads a measurement corresponding to the specified id.
+      parameters:
+        - $ref: '#/components/parameters/measurementIdParam'
+        - $ref: '#/components/parameters/filetypeParam'
+      responses:
+        '200':
+          description: Measurement file downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: base64
+        '400':
+          description: Bad Request
+        '404':
+          description: Measurement not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - Power Meter
+      summary: Add/Delete a tag for the specified measurement.
+      parameters:
+        - $ref: '#/components/parameters/measurementIdParam'
+        - name: Tag
+          in: header
+          description: "User provided tag."
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: "Add or remove a tag."
+          required: true
+          schema:
+            $ref: '#/components/schemas/TagOperation'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Tag already exists
+        '404':
+          description: Measurement not found / Tag not found
+        '500':
+          description: Internal Server Error
+    delete:
+      tags:
+        - Power Meter
+      summary: Deletes the measurement corresponding to the specified Id.
+      parameters:
+        - $ref: '#/components/parameters/measurementIdParam'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '404':
+          description: Measurement not found
+        '500':
+          description: Internal Server Error
+  /opm/monitoring:
+    get:
+      tags:
+        - Power Meter
+      summary: Gets current monitoring settings.
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+      responses:
+        '200':
+          description: Current monitoring settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitoringSettings'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/MonitoringSettings'
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - Power Meter
+      summary: Activates monitoring on channels. 
+      parameters:
+        - $ref: '#/components/parameters/metrinoConnectionStringParam'
+      requestBody:
+        description: Monitoring settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitoringSettings'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/MonitoringSettings'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request / Invalid Metrino-Connection-String / Unavailable - no detector on this channel or instrument / Duration not provided for time limited monitoring
+        '404':
+          description: Instrument not found
+        '500':
+          description: Internal Server Error
+components:
+  parameters:
+    metrinoConnectionStringParam:
+      name: Metrino-Connection-String
+      in: header
+      description: "OPM instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+      required: true
+      schema:
+        type: string
+        maxLength: 100
+    channelParam:
+      name: channel
+      in: path
+      description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+      required: true
+      schema:
+        type: integer
+        format: int32
+    scaleParam:
+      name: Scale
+      in: header
+      description: "Sets the scale used for measurement."
+      schema:
+        $ref: '#/components/schemas/Scale'
+    offsetParam:
+      name: Offset
+      in: header
+      description: "User provided power offset in dB."
+      schema:
+        type: number
+        format: double
+        default: 0.0
+    correctionFactorParam:
+      name: CorrectionFactor
+      in: header
+      description: "User provided correction factor in dB."
+      schema:
+        type: number
+        format: double
+        default: 0.0
+    referencePowerParam:
+      name: ReferencePower
+      in: header
+      description: "Reference absolute power value in dBm."
+      required: true
+      schema:
+        type: number
+        format: double
+        minimum: -100.0
+        maximum: 50.0
+    wavelengthParam:
+      name: Wavelength
+      in: header
+      description: "Wavelength used for measurement. Value is in meter."
+      required: true
+      schema:
+        type: number
+        format: double
+    absolutePowerUnitParam:
+      name: Unit
+      in: header
+      description: "Absolute power measurement selected unit."
+      schema:
+        $ref: '#/components/schemas/AbsolutePowerUnit'
+    relativePowerUnitParam:
+      name: Unit
+      in: header
+      description: "Relative power measurement selected unit."
+      schema:
+        $ref: '#/components/schemas/RelativePowerUnit'
+    averagingParam:
+      name: Averaging
+      in: header
+      description: "Number of measurement that will be used for averaging. \r\n#### Typical values: \r\n* 1 (no averaging)\r\n* 2\r\n* 5\r\n* 10\r\n* 20\r\n* 50\r\n* 100\r\n* 250\r\n* 500\r\n* 1000\r\n"
+      schema:
+        type: integer
+        format: int32
+        default: 1
+    acquisitionIdParam:
+      name: acquisitionId
+      in: path
+      description: "Acquisition Id"
+      required: true
+      schema:
+        type: string
+    measurementNameParam:
+      name: MeasurementName
+      in: header
+      description: "Name of the measurement to be saved"
+      schema:
+        type: string
+        maxLength: 200
+    actionParam:
+      name: action
+      in: query
+      description: "Request that the current acquisition be stopped or saved. Acquisition must be stopped before saving."
+      required: true
+      schema:
+        $ref: '#/components/schemas/AcquisitionOperation'
+    measurementIdParam:
+      name: measurementId
+      in: path
+      description: "Measurement Id"
+      required: true
+      schema:
+        type: string
+    filetypeParam:
+      name: filetype
+      in: query
+      description: Format of file type to be downloaded
+      required: true
+      schema:
+        $ref: '#/components/schemas/MeasurementFileType'
+  schemas:
+    AcquisitionConfiguration:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelConfiguration'
+        acquisitionSettings:
+          $ref: '#/components/schemas/AcquisitionSettings'
+        acquisitionOptions:
+          $ref: '#/components/schemas/AcquisitionOptions'
+    AcquisitionSummary:
+      type: object
+      properties:
+        acquisitionId:
+          type: string
+          description: "Acquisition Id."
+    MeasurementSummary:
+      type: object
+      properties:
+        measurementId:
+          type: string
+          description: "Measurement Id."
+        measurementName:
+          type: string
+          description: "Measurement name."
+        measurementDate:
+          type: string
+          description: "Measurement start date. Format in YYYY-MM-DD HH:MM:SS and value is UTC."
+        tags:
+          type: array
+          description: "List of all tags for this measurement."
+          items:
+            type: string
+    AcquisitionDetails:
+      type: object
+      properties:
+        acquisitionStatus:
+          enum:
+            - Waiting_for_trigger_condition
+            - In_progress
+            - Stopped_and_waiting_to_be_saved
+          type: string
+        configuration:
+          $ref: '#/components/schemas/AcquisitionConfiguration'
+    ChannelConfiguration:
+      type: object
+      required: [connectionString, channel, wavelength]
+      properties:
+        connectionString:
+          type: string
+          description: "OPM instrument Connection String. Format can be one of below: \r\n* sn:XXXX - where XXXX is instrument serial number.\r\n* slot:YY - where YY is the slot number where the module is inserted inside the platform."
+        channel:
+          type: integer
+          format: int32
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+        scale:
+          $ref: '#/components/schemas/Scale'
+        offset:
+          type: number
+          format: double
+          default: 0.0
+          description: "User provided power offset in dB"
+        correctionFactor:
+          type: number
+          format: double
+          default: 0.0
+          description: "User provided correction factor in dB"
+        referencePower:
+          type: number
+          format: double
+          minimum: -100.0
+          maximum: 50.0
+          description: "Reference absolute power value in dBm"
+        wavelength:
+          type: number
+          format: double
+          description: "Wavelength used for measurement. Value is in meter"
+        unit:
+          $ref: '#/components/schemas/AcquisitionUnit'
+        averaging:
+          type: integer
+          format: int32
+          default: 1
+          description: "Number of measurement that will be used for averaging. \r\n#### Typical values: \r\n* 1 (no averaging)\r\n* 2\r\n* 5\r\n* 10\r\n* 20\r\n* 50\r\n* 100\r\n* 250\r\n* 500\r\n* 1000\r\n"
+    AcquisitionSettings:
+      type: object
+      properties:
+        samplingRate:
+          $ref: '#/components/schemas/SamplingRate'
+        samplingType:
+          enum:
+            - Continuous
+            - Single
+            - Interval
+          type: string
+          default: Single
+          description: "Sampling type for the acquisition."
+        bufferSize:
+          type: integer
+          format: int32
+          default: 10
+          description: "Value used for Continuous and Interval sampling type. Value is in seconds."
+        duration:
+          type: integer
+          format: int32
+          default: 10
+          description: "Value used for Single sampling type. Value is in seconds."
+        interval:
+          type: integer
+          format: int32
+          default: 10
+          description: "Value used for Interval sampling type. Value is in seconds."
+    AcquisitionOptions:
+      type: object
+      properties:
+        delayActivated:
+          type: boolean
+          default: false
+          description: "Indicates whether or not the acquisition is delayed before starting."
+        delay:
+          type: integer
+          format: int32
+          default: 10
+          description: "Delay in seconds before the acquisition starts."
+        triggerActived:
+          type: boolean
+          default: false
+          description: "Indicates whether or not the acquisition is using a trigger."
+        trigger:
+          type: object
+          properties:
+            expression:
+              type: string
+              description: "Specifies the trigger expression. Example value is 'C1 < C2 OR C2 > 2.000 dB' in which there are two expressions. One is before OR and the other is after OR. Only AND / OR operators are supported between two expressions. Another example is  'C4 > 3 dBm' where only one expression exists. Unit can be one of dBm, W, dB, W_W. C1, C2, C3, C4 are the channel identifier for specified instrument. Channel identifiers and units are case insensitive."
+            position:
+              type: integer
+              format: int32
+              description: "Specifies the value of the position (in percentage) on the edge where the data will begin to be acquired in the buffer when the trigger occurs. Value can be between 0 to 100 and should be in multiples of 5, for example 5, 10, 85 etc. Default value is 0."
+            mode:
+              enum:
+                - Measurement
+                - ExternalRising
+                - ExternalFalling
+              type: string
+              description: "Specifies the mode of the trigger. Possible values are Measurement, ExternalRising, ExternalFalling. If value is Measurement, trigger expression will be used. If value is ExternalRising or ExternalFalling, position will be used. Default value is Measurement."
+    NullingState:
+      enum:
+        - Completed
+        - InProgress
+        - LightDetected
+      type: string
+    Scale:
+      enum:
+        - Auto
+        - S1
+        - S2
+      type: string
+      default: "Auto"
+      description: "Sets the scale used for measurement"
+    InstrumentInformationType:
+      enum:
+        - Summary
+        - Full
+      type: string
+      default: "Summary"
+    AbsolutePowerUnit:
+      enum:
+        - dBm
+        - W
+      type: string
+      default: dBm
+    RelativePowerUnit:
+      enum:
+        - dB
+        - W_W
+      type: string
+      default: dB
+    AcquisitionUnit:
+      enum:
+        - dBm
+        - W
+        - dB
+        - W_W
+      type: string
+      default: dBm
+      description: "User selected unit. If dBm or W is selected, then absolute power measurements are made and referencePower will be ignored. If dB or W_W is selected, then relative power measurements are made and referencePower shall be provided."
+    InstrumentInformationSummary:
+      type: object
+      properties:
+        instrumentModelName:
+          type: string
+          description: "Corresponds to the complete model name of the instrument. For e.g. FTB-1750-031-2\r\n"
+        connectionStrings:
+          type: array
+          items:
+            type: string
+          description: "List of possible values for Metrino-Connection-String. First possible value is sn:XXXX - where XXXX is instrument serial number and second possible value is slot:YY - where YY is the slot number where the module is inserted inside the platform."
+        channelCount:
+          type: integer
+          format: int32
+          default: 1
+          description: "Corresponds to the number of channels this instrument provides. Each channel has it's own characteristics and is independent from other channels.\r\n"
+    InstrumentInformation:
+      allOf:
+      - $ref: '#/components/schemas/InstrumentInformationSummary'
+      - type: object
+        properties:
+          modular:
+            type: boolean
+            description: "Specifies whether module fits inside a LTB platform. Value can be true of false."
+          platformName:
+            type: string
+            description: "Name of the platform the module is connected. for e.g. LTB-8. In case of non modular device, the name of device should be returned. for e.g. MXS-9100"
+          platformId:
+            type: integer
+            format: int32
+            description: "Logical instrument identifier (LINS) of the module inside platform. It is an integer. for e.g. 0, 1 or 2 etc. In case of non modular device, -1 should be returned."
+          slotNumber:
+            type: integer
+            format: int32
+            description: The slot number of the module inside the platform. In case of non modular device, -1 should be returned.
+          slotCount:
+            type: integer
+            format: int32
+            description: "Number of slots occupied by the module inside the platform. In case of non modular device, 0 should be returned."
+          platformSerialNumber:
+            type: string
+            description: "Serial number of the platform the module is connected."
+          instrumentState:
+            $ref: '#/components/schemas/InstrumentState'
+    InstrumentState:
+      enum:
+        - Busy
+        - Defective
+        - Initinprogress
+        - Ready
+        - Unconfigured
+        - Uninitialized
+      type: string
+      description: "Indicates the status of the module.\r\n#### Valid values: \r\n* Busy - Means the module is busy.\r\n* Defective - Means the module is defective.\r\n* Initinprogress - Means the module initialization is in progress.\r\n* Ready - Means the module is ready.\r\n* Unconfigured - Means the module is not configured.\r\n* Uninitialized - Means the module is not initialized."
+    Channel:
+      type: object
+      properties:
+        connectionStrings:
+          type: array
+          items:
+            type: string
+          description: "List of possible values for Metrino-Connection-String. First possible value is sn:XXXX - where XXXX is instrument serial number and second possible value is slot:YY - where YY is the slot number where the module is inserted inside the platform."
+        channel:
+          type: integer
+          format: int32
+          minimum: 1
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+        detectorType:
+          $ref: '#/components/schemas/DetectorType'
+        connectorAdaptor:
+          $ref: '#/components/schemas/ConnectorAdaptor'
+        measurementScaleRanges:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeasurementScaleRanges'
+        analogOutputRanges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalogOutputRanges'
+        wavelengthRange:
+          $ref: '#/components/schemas/WavelengthRange'
+        offsetRange:
+          $ref: '#/components/schemas/OffsetRange'
+        correctionFactorRange:
+          $ref: '#/components/schemas/CorrectionFactorRange'
+        samplingRateRange:
+          $ref: '#/components/schemas/SamplingRateRange'
+        averagingRange:
+          $ref: '#/components/schemas/AveragingRange'
+        modes:
+          type: array
+          items:
+            type: string
+          example: ["Relative", "Absolute"]
+          description: "Indicates possible values for modes."
+    AveragingRange:
+      type: object
+      description: Channel averaging limits.
+      properties:
+        minimumAveraging:
+          type: number
+          format: double
+        maximumAveraging:
+          type: number
+          format: double
+    OffsetRange:
+      type: object
+      description: Channel offset limits in dB.
+      properties:
+        minimumOffset:
+          type: number
+          format: double
+        maximumOffset:
+          type: number
+          format: double
+    CorrectionFactorRange:
+      type: object
+      description: Channel correction factor limits in dB.
+      properties:
+        minimumCorrectionFactor:
+          type: number
+          format: double
+        maximumCorrectionFactor:
+          type: number
+          format: double
+    SamplingRateRange:
+      type: object
+      description: Channel sampling rate limits in Hz.
+      properties:
+        minimumSamplingRate:
+          type: number
+          format: double
+        maximumSamplingRate:
+          type: number
+          format: double
+    WavelengthRange:
+      type: object
+      description: "Wavelength boundaries in meter. Can be used to indicate the operational limits of the detector."
+      properties:
+        startWavelength:
+          type: number
+          format: double
+        stopWavelength:
+          type: number
+          format: double
+    DetectorType:
+      enum:
+        - No_Detector
+        - InGaAs
+        - GeX
+        - InGaAs_Integrating_Cavity
+      type: string
+      description: "Specifies the detector type available at this channel.\r\n#### Valid values:\r\n* No_Detector (No detector found)\r\n* InGaAs (1 mm InGaAs detector)\r\n* GeX (3 mm GeX detector)\r\n* InGaAs_Integrating_Cavity (9 mm integrating cavity with 1 mm InGaAs detector)\r\n"
+    ConnectorAdaptor:
+      enum:
+        - No_FOA
+        - BFA_3000
+        - FOA_302B
+        - FOA_316
+        - FOA_322
+        - FOA_328
+        - FOA_330
+        - FOA_332
+        - FOA_340
+        - FOA_354
+        - FOA_376
+        - FOA_384
+        - FOA_392B
+        - FOA_397
+        - FOA_398
+        - FOA_399
+        - FOA_3000
+        - FOA_8100
+        - FOA_U12
+        - FOA_U25
+      type: string
+      description: "Specifies the connector adapter available at this channel.\r\n#### Valid values:\r\n* No_FOA (No Adapter)\r\n* BFA_3000 (Universal Bare Fiber Adapter)\r\n* FOA_302B (MT (8-12 fibers) ultra-low-reflection connector adapter)\r\n* FOA_316 (SMA 906 ultra-low-reflection)\r\n* FOA_322 (FC ultra-low-reflection: FC (PC/SPC/UPC/APC), NEC-D3)\r\n* FOA_328 (DIN 47256 (LSA) ultra-low-reflection: DIN 47256 (PC/APC))\r\n* FOA_330 (LC duplex ultra-low-reflection connector adapter)\r\n* FOA_332 (ST ultra-low-reflection: ST (PC/SPC/UPC))\r\n* FOA_340 (Diamond HMS-0, HFS-3 (3.5 mm) ultra-low-reflection)\r\n* FOA_354 (SC ultra-low-reflection: SC (PC/SPC/UPC/APC))\r\n* FOA_376 (FSMA HMS-10/AG, HFS-10/AG ultra-low-reflection)\r\n* FOA_384 (Diamond HMS-10, HFS-13 ultra-low-reflection)\r\n* FOA_392B (MTP (12 fibers) ultra-low-reflection connector adapter)\r\n* FOA_397 (LX.5 ultra-low-reflection)\r\n* FOA_398 (LC ultra-low-reflection)\r\n* FOA_399 (MU ultra-low-reflection)\r\n* FOA_3000 (Adapter for BFA-3000 base fiber adapter)\r\n* FOA_8100 (Adapter for keysight 8100Bx base fiber adapter)\r\n* FOA_U12 (1.25 mm universal)\r\n* FOA_U25 (2.5 mm universal)\r\n"
+    MeasurementScaleRanges:
+      type: array
+      items:
+        $ref: '#/components/schemas/MeasurementScaleRange'
+    MeasurementScaleRange:
+      type: object
+      properties:
+        name:
+          type: string
+          default: Auto
+          description: "Name of the measurement scale range. Possible values: Auto, S1, S2."
+        maximumValue:
+          type: number
+          format: double
+          description: "Maximum value of the measurement scale range in dBm."
+        minimumValue:
+          type: number
+          format: double
+          description: "Minimum value of the measurement scale range in dBm."
+    AnalogOutputRanges:
+      type: array
+      items:
+        $ref: '#/components/schemas/AnalogOutputRange'
+    AnalogOutputRange:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Indicates the analog output range name. \r\n#### Typical values: \r\n* Zone 1\r\n* Zone 2\r\n* Zone 3\r\n* Zone 4\r\n* Zone 5\r\n* Zone 6\r\n"
+        maximumValuedBm:
+          type: number
+          format: double
+          description: "Maximum dBm value of current zone."
+        minimumValuedBm:
+          type: number
+          format: double
+          description: "Minimum dBm value of current zone."
+        maximumValueVolt:
+          type: number
+          format: double
+          description: "Maximum Volt value of current zone."
+        minimumValueVolt:
+          type: number
+          format: double
+          description: "Minimum Volt value of current zone."
+    AnalogOutputConfiguration:
+      type: object
+      properties:
+        channel:
+          type: integer
+          format: int32
+          description: "Channel identification number. Positive integer value: corresponds to channel index and starts at 1."
+          default: 1
+        activated:
+          type: boolean
+          description: "Indicates whether analog output port is enabled."
+          default: false
+        analogOutputRangeName:
+          type: string
+          default: "Zone 1"
+          description: "Indicates the analog output range name. \r\n#### Typical values: \r\n* Zone 1\r\n* Zone 2\r\n* Zone 3\r\n* Zone 4\r\n* Zone 5\r\n* Zone 6\r\n"
+    PowerDrift:
+      type: object
+      properties:
+        maximum:
+          type: number
+          format: double
+          description: "Maximum power value in selected unit."
+        minimum:
+          type: number
+          format: double
+          description: "Minimum power value in selected unit."
+        delta:
+          type: number
+          format: double
+          description: "Power difference in corresponding maximum/minimum power unit."
+    RelativePowerDrift:
+      type: object
+      properties:
+        maximum:
+          type: number
+          format: double
+          description: "Maximum relative power value in selected unit."
+        minimum:
+          type: number
+          format: double
+          description: "Minimum relative power value in selected unit."
+        delta:
+          type: number
+          format: double
+          description: "Power difference in corresponding maximum/minimum relative power unit."
+    MonitoringSettings:
+      type: object
+      properties:
+        activated:
+          type: boolean
+          description: "Indicates whether monitoring is enabled."
+        timeLimited:
+          type: boolean
+          description: "Indicates that monitoring will be limited in time. If activated, duration must be provided."
+        duration:
+          type: integer
+          format: int32
+          description: "Duration in second for time limited monitoring."  
+    SamplingRate:
+      type: number
+      format: double
+      description: "Measurement acquisition frequency in Hz"
+    MeasurementFileType:
+      enum:
+        - csv
+        - csvHeader
+        - xlsx
+      type: string
+    AcquisitionOperation:
+      enum:
+        - stop
+        - save
+      type: string
+    TagOperation:
+      enum:
+        - add
+        - remove
+      type: string
